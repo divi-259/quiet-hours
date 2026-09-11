@@ -122,6 +122,17 @@
     font-size:.78rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-muted); min-height:1em;
   }
+  .current-row{
+    display:flex; align-items:baseline; gap:8px;
+    font-family:var(--font-body); text-shadow:0 2px 12px rgba(0,0,0,.4);
+  }
+  .current-label{
+    font-size:.8rem; font-weight:600; letter-spacing:.04em; color:var(--ink-muted);
+  }
+  .current-value{
+    font-family:var(--font-display); font-variant-numeric:tabular-nums;
+    font-size:1.3rem; font-weight:600; color:var(--ink);
+  }
 
   .controls{display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:center;}
   .btn-pill{
@@ -319,6 +330,10 @@
     </svg>
     <div class="readout">
       <div class="time" id="timeDisplay">00:00:00</div>
+      <div class="current-row" id="currentRow">
+        <span class="current-label">Current</span>
+        <span class="current-value" id="currentDisplay">00:00</span>
+      </div>
       <div class="phase-label" id="phaseLabel"></div>
     </div>
   </div>
@@ -760,10 +775,23 @@
     mode: "stopwatch",           // 'stopwatch' | 'timer'
     running: false,
     stopwatchMs: 0,
+    currentMs: 0,                 // time since the last Start press (stopwatch only)
     timerPhase: "work",          // 'work' | 'break'
     timerRemainingMs: settings.workMinutes*60000,
     lastTick: null
   };
+
+  var BASE_TITLE = document.title;
+  function updateTabTitle(){
+    if(!state.running){ document.title = BASE_TITLE; return; }
+    if(state.mode === "stopwatch"){
+      document.title = msToClock(state.currentMs, false) + " · Quiet Hours";
+    } else {
+      var label = state.timerPhase === "work" ? "Focus" : "Break";
+      document.title = msToClock(state.timerRemainingMs, false) + " · " + label;
+    }
+  }
+  setInterval(updateTabTitle, 1000);
 
   var RING_CIRC = 2 * Math.PI * 54;
   $("ringProgress").setAttribute("stroke-dasharray", RING_CIRC.toFixed(2));
@@ -775,7 +803,8 @@
   function updateDisplay(){
     if(state.mode === "stopwatch"){
       $("timeDisplay").textContent = msToClock(state.stopwatchMs, true);
-      $("phaseLabel").textContent = state.running ? "Running" : (state.stopwatchMs>0 ? "Paused" : "");
+      $("currentDisplay").textContent = msToClock(state.currentMs, false);
+      $("phaseLabel").textContent = state.running ? "" : (state.stopwatchMs>0 ? "Paused" : "");
       $("ringSvg").style.display = "none";
     } else {
       $("timeDisplay").textContent = msToClock(state.timerRemainingMs, false);
@@ -807,14 +836,19 @@
     setRunningUI(false);
     playChime();
     updateDisplay();
+    updateTabTitle();
   }
 
-  function tick(now){
+  // Driven by setInterval + Date.now() deltas (not requestAnimationFrame) so elapsed
+  // time stays accurate even while the tab is backgrounded/throttled and not painting.
+  function tick(){
+    var now = Date.now();
     if(state.running){
       if(state.lastTick != null){
         var delta = now - state.lastTick;
         if(state.mode === "stopwatch"){
           state.stopwatchMs += delta;
+          state.currentMs += delta;
           addToHistory("stopwatchMs", delta);
         } else {
           state.timerRemainingMs -= delta;
@@ -823,7 +857,7 @@
             state.timerRemainingMs = 0;
             updateDisplay();
             handlePhaseComplete();
-            requestAnimationFrame(tick);
+            state.lastTick = now;
             return;
           }
         }
@@ -834,19 +868,26 @@
     } else {
       state.lastTick = null;
     }
-    requestAnimationFrame(tick);
   }
-  requestAnimationFrame(tick);
+  setInterval(tick, 200);
+
+  document.addEventListener("visibilitychange", function(){
+    if(!document.hidden){ tick(); updateTabTitle(); }
+  });
 
   function play(){
     state.running = true;
+    if(state.mode === "stopwatch"){ state.currentMs = 0; }
     setRunningUI(true);
+    updateDisplay();
+    updateTabTitle();
   }
   function pause(){
     state.running = false;
     setRunningUI(false);
     flushHistory();
     updateDisplay();
+    updateTabTitle();
   }
   function togglePlay(){
     if(state.running) pause(); else play();
@@ -857,12 +898,14 @@
     setRunningUI(false);
     if(state.mode === "stopwatch"){
       state.stopwatchMs = 0;
+      state.currentMs = 0;
     } else {
       state.timerPhase = "work";
       state.timerRemainingMs = phaseTotalMs();
     }
     flushHistory();
     updateDisplay();
+    updateTabTitle();
   }
 
   $("playPauseBtn").addEventListener("click", togglePlay);
@@ -884,7 +927,9 @@
     $("mode-timer").setAttribute("aria-selected", mode==="timer");
     $("skipBtn").style.display = mode==="timer" ? "" : "none";
     $("timerSettingsHost").style.display = mode==="timer" ? "" : "none";
+    $("currentRow").style.display = mode==="stopwatch" ? "" : "none";
     updateDisplay();
+    updateTabTitle();
   }
   $("mode-stopwatch").addEventListener("click", function(){ switchMode("stopwatch"); });
   $("mode-timer").addEventListener("click", function(){ switchMode("timer"); });
