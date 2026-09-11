@@ -391,10 +391,10 @@
   <p class="photo-credits">
     Photos via Wikimedia Commons —
     <a href="https://commons.wikimedia.org/wiki/File:Calm_Lake_Matheson_with_mist_at_sunrise.jpg" target="_blank" rel="noopener">Dawn</a>,
-    <a href="https://commons.wikimedia.org/wiki/File:Steamboat_Lake_Mountain_Meadow.jpg" target="_blank" rel="noopener">Noon</a> (Michael Kirsh, CC BY-SA 4.0),
+    <a href="https://commons.wikimedia.org/wiki/File:Meadow_in_South-Western_Sweden.jpg" target="_blank" rel="noopener">Noon</a> (Tord Dellsen, CC BY-SA 4.0),
     <a href="https://commons.wikimedia.org/wiki/File:Golden_sunset_silhouette_of_a_small_boat_on_a_calm_lake.jpg" target="_blank" rel="noopener">Ember</a>,
     <a href="https://commons.wikimedia.org/wiki/File:Starry_night_at_the_Atacama_Desert_coast_(gerd_huedepohl_9).jpg" target="_blank" rel="noopener">Night</a> (G. Hüdepohl/ESO, CC BY 4.0),
-    <a href="https://commons.wikimedia.org/wiki/File:Misty_morning_sunlight_shining_through_the_trees_in_the_forest_near_Viana_do_Castelo,_Portugal,_January_2024_(53524128465).jpg" target="_blank" rel="noopener">Moss</a> (Sergei Gussev, CC BY 2.0)
+    <a href="https://commons.wikimedia.org/wiki/File:Coming_home_iii_-_Flickr_-_hannes-flo.jpg" target="_blank" rel="noopener">Moss</a> (Hannes Flo, CC BY 2.0)
   </p>
 </section>
 
@@ -676,6 +676,22 @@
   trays.history.handle.addEventListener("click", function(){ toggleTray("history"); });
   document.querySelectorAll("[data-close]").forEach(function(b){
     b.addEventListener("click", closeAllTrays);
+  });
+
+  var trayHandleBar = document.querySelector(".tray-handle");
+  document.addEventListener("click", function(e){
+    if(!openTrayKey) return;
+    // Use composedPath (the ancestry captured at dispatch time) rather than
+    // e.target + contains(): handlers like applyMood rebuild the tray's
+    // innerHTML synchronously, which can detach e.target from the document
+    // before this bubbles up, making a plain contains() check false-negative.
+    var path = e.composedPath ? e.composedPath() : [e.target];
+    var openEl = trays[openTrayKey].el;
+    if(path.indexOf(openEl) !== -1 || path.indexOf(trayHandleBar) !== -1) return;
+    closeAllTrays();
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && openTrayKey) closeAllTrays();
   });
 
   /* ---------- history rendering ---------- */
