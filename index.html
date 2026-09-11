@@ -382,6 +382,10 @@
     <input type="range" id="volumeSlider" min="0" max="100" value="45">
     <span id="volumeValue">45%</span>
   </div>
+  <p class="photo-credits">
+    Rain recording via Wikimedia Commons —
+    <a href="https://commons.wikimedia.org/wiki/File:Sound_of_light_rainfall.ogg" target="_blank" rel="noopener">Sound of light rainfall</a> (CC BY-SA 4.0)
+  </p>
 </section>
 
 <section class="tray" id="tray-theme" aria-label="Theme settings">
@@ -558,51 +562,75 @@
   }
   renderEyebrow();
 
-  /* ---------- ambient sound (Web Audio, synthesized — no external audio files) ---------- */
+  /* ---------- ambient sound ----------
+     "brown" (Deep calm) is synthesized noise; "rain" (Soft rain) is a real
+     field recording (CC BY-SA 4.0, Wikimedia Commons — see credits in the
+     theme tray) decoded once and looped, since filtered synthetic noise
+     read as harsh/hissy compared to an actual rain recording. */
   var audioCtx = null, noiseSource = null, filterNode = null, gainNode = null;
+  var rainBuffer = null, rainLoadToken = 0;
   function ensureAudioCtx(){
     if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     return audioCtx;
   }
-  function makeNoiseBuffer(ctx, seconds, brown){
+  function makeNoiseBuffer(ctx, seconds){
     var bufferSize = ctx.sampleRate * seconds;
     var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     var data = buffer.getChannelData(0);
     var lastOut = 0;
     for(var i=0;i<bufferSize;i++){
       var white = Math.random()*2-1;
-      if(brown){
-        lastOut = (lastOut + 0.02*white) / 1.02;
-        data[i] = lastOut * 3.5;
-      } else {
-        data[i] = white;
-      }
+      lastOut = (lastOut + 0.02*white) / 1.02;
+      data[i] = lastOut * 3.5;
     }
     return buffer;
   }
   function stopSound(){
     if(noiseSource){ try{ noiseSource.stop(); }catch(e){} noiseSource = null; }
+    rainLoadToken++; // invalidate any in-flight rain fetch/decode
   }
   function startSound(kind){
     stopSound();
     if(kind === "none") return;
     var ctx = ensureAudioCtx();
-    var brown = kind === "brown";
-    var buffer = makeNoiseBuffer(ctx, 6, brown);
+    if(!gainNode){ gainNode = ctx.createGain(); gainNode.connect(ctx.destination); }
+    gainNode.gain.value = settings.volume/100 * 0.5;
+
+    if(kind === "rain"){
+      var myToken = rainLoadToken;
+      if(rainBuffer){
+        playRainBuffer(ctx, rainBuffer);
+      } else {
+        fetch("assets/sounds/rain.m4a")
+          .then(function(r){ return r.arrayBuffer(); })
+          .then(function(data){ return ctx.decodeAudioData(data); })
+          .then(function(buf){
+            rainBuffer = buf;
+            if(myToken === rainLoadToken && settings.sound === "rain") playRainBuffer(ctx, buf);
+          })
+          .catch(function(err){ console.error("Could not load rain sound:", err); });
+      }
+      return;
+    }
+
+    // brown noise (Deep calm)
+    var buffer = makeNoiseBuffer(ctx, 6);
     noiseSource = ctx.createBufferSource();
     noiseSource.buffer = buffer;
     noiseSource.loop = true;
-
     if(!filterNode){ filterNode = ctx.createBiquadFilter(); }
-    if(!gainNode){ gainNode = ctx.createGain(); gainNode.connect(ctx.destination); }
-
-    filterNode.type = brown ? "lowpass" : "bandpass";
-    filterNode.frequency.value = brown ? 300 : 1800;
-    filterNode.Q.value = brown ? 0.7 : 0.9;
-
+    filterNode.type = "lowpass";
+    filterNode.frequency.value = 300;
+    filterNode.Q.value = 0.7;
     noiseSource.connect(filterNode);
     filterNode.connect(gainNode);
-    gainNode.gain.value = settings.volume/100 * 0.5;
+    noiseSource.start();
+  }
+  function playRainBuffer(ctx, buffer){
+    noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = buffer;
+    noiseSource.loop = true;
+    noiseSource.connect(gainNode);
     noiseSource.start();
   }
   function setVolume(v){
