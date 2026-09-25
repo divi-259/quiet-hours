@@ -28,9 +28,14 @@
   /* ---- Mood palettes: each is a photo + an accent colour ---- */
   [data-mood="dawn"]{ --accent:#e8935f; --photo:url("assets/backgrounds/dawn.jpg"); }
   [data-mood="noon"]{ --accent:#4fae95; --photo:url("assets/backgrounds/noon.jpg"); }
-  [data-mood="ember"]{ --accent:#e8a559; --photo:url("assets/backgrounds/ember.jpg"); }
   [data-mood="midnight"]{ --accent:#e8c171; --photo:url("assets/backgrounds/midnight.jpg"); }
   [data-mood="moss"]{ --accent:#d98a55; --photo:url("assets/backgrounds/moss.jpg"); }
+  [data-mood="lunar"]{ --accent:#8fb4d9; --photo:url("assets/backgrounds/moon.jpg"); }
+  [data-mood="starlit"]{ --accent:#a9a2e8; --photo:url("assets/backgrounds/moon_sky.jpg"); }
+  [data-mood="dusk"]{ --accent:#d97fa3; --photo:url("assets/backgrounds/moon_night.jpg"); }
+  [data-mood="cosmos"]{ --accent:#c98bd9; --photo:url("assets/backgrounds/night_sky.jpg"); }
+  [data-mood="tide"]{ --accent:#e0917a; --photo:url("assets/backgrounds/ocean_rocks.jpg"); }
+  [data-mood="shore"]{ --accent:#f0ad63; --photo:url("assets/backgrounds/ocean_sunset.jpg"); }
 
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;}
@@ -161,19 +166,29 @@
   /* ---- Tray ---- */
   .tray-handle{
     position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
-    z-index:3; display:flex; gap:6px; padding:6px;
-    background:var(--panel); border:1px solid var(--panel-border);
-    border-radius:999px; backdrop-filter:blur(14px);
+    z-index:3; display:flex; align-items:center; gap:2px; padding:10px 10px;
+    background:var(--panel-strong); border:1px solid var(--panel-border);
+    border-radius:24px; backdrop-filter:blur(22px);
+    box-shadow:0 14px 38px -16px rgba(0,0,0,.6);
   }
-  .tray-handle button{
-    border:none; background:transparent; cursor:pointer;
-    width:40px; height:40px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
+  .tray-handle button, .tray-handle a{
+    border:none; background:transparent; cursor:pointer; text-decoration:none;
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    padding:8px 14px; border-radius:16px;
     color:var(--ink-muted); transition:background .2s,color .2s;
   }
-  .tray-handle button svg{width:18px;height:18px;}
-  .tray-handle button.active{background:var(--accent); color:#fff;}
-  .tray-handle button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .tray-handle button svg, .tray-handle a svg{width:19px; height:19px; transition:transform .2s ease;}
+  .tray-handle button .handle-label, .tray-handle a .handle-label{
+    font-size:.6rem; font-weight:600; letter-spacing:.03em; color:inherit;
+  }
+  .tray-handle button.active{background:rgba(255,255,255,.14); color:var(--ink);}
+  .tray-handle button:hover svg, .tray-handle a:hover svg{transform:translateY(-1px);}
+  .tray-handle button:focus-visible, .tray-handle a:focus-visible{outline:2px solid var(--ink); outline-offset:2px;}
+  .tray-handle button[data-tint="sound"] svg{color:#6db2ef;}
+  .tray-handle button[data-tint="theme"] svg{color:#eaa855;}
+  .tray-handle button[data-tint="time"] svg{color:#49bb8a;}
+  .tray-handle a[data-tint="jobs"] svg{color:#a687ec;}
+  .tray-divider{width:1px; height:30px; background:var(--panel-border); margin:0 4px; flex:none;}
 
   .tray{
     position:fixed; left:0; right:0; bottom:0; z-index:2;
@@ -358,15 +373,23 @@
 </main>
 
 <div class="tray-handle">
-  <button id="handleSound" aria-label="Ambient sound">
+  <button id="handleSound" data-tint="sound" aria-label="Ambient sound">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg>
+    <span class="handle-label">Sound</span>
   </button>
-  <button id="handleTheme" aria-label="Theme">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="8" r="1.3" fill="currentColor"></circle><circle cx="8" cy="13" r="1.3" fill="currentColor"></circle><circle cx="16" cy="13" r="1.3" fill="currentColor"></circle></svg>
+  <button id="handleTheme" data-tint="theme" aria-label="Theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.9-.5-1.4 0-1.1.9-2 2-2h2.3c1.8 0 3.2-1.4 3.2-3.2C20.5 6.6 16.7 2 12 2Z"></path><circle cx="7.5" cy="10.5" r="1.15" fill="currentColor" stroke="none"></circle><circle cx="10.5" cy="7" r="1.15" fill="currentColor" stroke="none"></circle><circle cx="15" cy="7.5" r="1.15" fill="currentColor" stroke="none"></circle><circle cx="17.2" cy="11.5" r="1.15" fill="currentColor" stroke="none"></circle></svg>
+    <span class="handle-label">Theme</span>
   </button>
-  <button id="handleHistory" aria-label="History">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><polyline points="3 4 3 9 8 9"></polyline><polyline points="12 7 12 12 15 14"></polyline></svg>
+  <button id="handleHistory" data-tint="time" aria-label="Time tracked">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 16 14"></polyline></svg>
+    <span class="handle-label">Time tracked</span>
   </button>
+  <div class="tray-divider" aria-hidden="true"></div>
+  <a id="handleJobs" data-tint="jobs" href="https://divi-259.github.io/brighttrail/" target="_blank" rel="noopener" aria-label="Job applications (opens BrightTrail in a new tab)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><line x1="2" y1="13" x2="22" y2="13"></line></svg>
+    <span class="handle-label">Job apps</span>
+  </a>
 </div>
 
 <section class="tray" id="tray-sound" aria-label="Ambient sound settings">
@@ -396,9 +419,9 @@
     Photos via Wikimedia Commons —
     <a href="https://commons.wikimedia.org/wiki/File:Calm_Lake_Matheson_with_mist_at_sunrise.jpg" target="_blank" rel="noopener">Dawn</a>,
     <a href="https://commons.wikimedia.org/wiki/File:Meadow_in_South-Western_Sweden.jpg" target="_blank" rel="noopener">Noon</a> (Tord Dellsen, CC BY-SA 4.0),
-    <a href="https://commons.wikimedia.org/wiki/File:Golden_sunset_silhouette_of_a_small_boat_on_a_calm_lake.jpg" target="_blank" rel="noopener">Ember</a>,
     <a href="https://commons.wikimedia.org/wiki/File:Starry_night_at_the_Atacama_Desert_coast_(gerd_huedepohl_9).jpg" target="_blank" rel="noopener">Night</a> (G. Hüdepohl/ESO, CC BY 4.0),
-    <a href="https://commons.wikimedia.org/wiki/File:Coming_home_iii_-_Flickr_-_hannes-flo.jpg" target="_blank" rel="noopener">Moss</a> (Hannes Flo, CC BY 2.0)
+    <a href="https://commons.wikimedia.org/wiki/File:Coming_home_iii_-_Flickr_-_hannes-flo.jpg" target="_blank" rel="noopener">Moss</a> (Hannes Flo, CC BY 2.0).
+    Lunar, Starlit, Dusk, Cosmos, Tide, and Shore photos via Pexels.
   </p>
 </section>
 
@@ -447,9 +470,14 @@
   var MOODS = [
     {key:"dawn", label:"Dawn", swatch:"linear-gradient(135deg,#f7d9c4,#c9dce8)"},
     {key:"noon", label:"Noon", swatch:"linear-gradient(135deg,#eaf2f5,#dceae2)"},
-    {key:"ember", label:"Ember", swatch:"linear-gradient(135deg,#8c3b2e,#4a2038)"},
     {key:"midnight", label:"Night", swatch:"linear-gradient(135deg,#1b2b4a,#0e1526)"},
-    {key:"moss", label:"Moss", swatch:"linear-gradient(135deg,#5c6b4f,#1e2620)"}
+    {key:"moss", label:"Moss", swatch:"linear-gradient(135deg,#5c6b4f,#1e2620)"},
+    {key:"lunar", label:"Lunar", swatch:"linear-gradient(135deg,#c7cdd4,#15161a)"},
+    {key:"starlit", label:"Starlit", swatch:"linear-gradient(135deg,#1a2340,#050810)"},
+    {key:"dusk", label:"Dusk", swatch:"linear-gradient(135deg,#8a4a78,#241333)"},
+    {key:"cosmos", label:"Cosmos", swatch:"linear-gradient(135deg,#6b4f9e,#12101f)"},
+    {key:"tide", label:"Tide", swatch:"linear-gradient(135deg,#f3c9c2,#9fc4d9)"},
+    {key:"shore", label:"Shore", swatch:"linear-gradient(135deg,#f6c98f,#e8896a)"}
   ];
 
   var SETTINGS_KEY = "quietHours.settings.v1";
